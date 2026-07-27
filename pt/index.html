@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Running strength &amp; PT routine</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    background: #f7f6f2;
+    color: #1a1a18;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: #6b6a63; margin: 0 0 20px; }
+  .stats { display: flex; gap: 12px; margin-bottom: 16px; }
+  .stat-card { flex: 1; background: #fff; border: 1px solid #e4e2da; border-radius: 10px; padding: 12px; }
+  .stat-label { font-size: 12px; color: #6b6a63; margin: 0 0 4px; }
+  .stat-value { font-size: 22px; font-weight: 600; margin: 0; }
+  .hint { font-size: 12px; color: #8a8880; margin: 0 0 8px; }
+  .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px; }
+  .day-tile { position: relative; text-align: center; padding: 8px 2px 6px; border-radius: 8px; border: 1px solid #e4e2da; background: #fff; cursor: pointer; }
+  .day-tile.active { border-color: #b3562e; background: #faece7; }
+  .day-tile.done { border-color: #999; background: #f1efe8; }
+  .day-tile .dlabel { font-size: 10px; color: #6b6a63; display: block; }
+  .day-tile .dicon { font-size: 16px; display: block; margin: 4px 0 2px; }
+  .toggle-btn-small {
+    position: absolute; top: 1px; right: 1px; font-size: 9px; padding: 1px 4px;
+    border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer;
+  }
+  .card { border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; border: 1px solid #e4e2da; }
+  .card.pt { background: #eeedfe; }
+  .card.today { background: #fff; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .card-title { font-weight: 600; font-size: 15px; }
+  .card-sub { font-size: 13px; color: #6b6a63; }
+  .ex-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 6px 0; border-top: 1px solid #e4e2da; cursor: pointer; }
+  .ex-row:hover .ex-name { color: #b3562e; }
+  .ex-name { flex: 1; }
+  .ex-detail { color: #6b6a63; font-size: 13px; }
+  button {
+    font-family: inherit; font-size: 13px; padding: 6px 14px; border-radius: 8px;
+    border: 1px solid #ccc; background: #fff; cursor: pointer;
+  }
+  button:active { transform: scale(0.98); }
+  .pt-btn { font-size: 12px; padding: 4px 10px; }
+  .pt-btn.done { background: #faece7; border-color: #b3562e; color: #712b13; }
+  #next-week { width: 100%; margin-top: 8px; }
+  #reset-progress { width: 100%; margin-top: 8px; color: #8a8880; }
+  .run-note { font-size: 14px; color: #6b6a63; margin: 0; }
+  .sync-note { font-size: 11px; color: #b3562e; margin: -12px 0 16px; min-height: 14px; }
+
+  .modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(20,20,18,0.5); align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 14px; padding: 20px 24px 24px; max-width: 300px; width: 90%;
+    text-align: center; position: relative;
+  }
+  .modal-close {
+    position: absolute; top: 8px; right: 8px; border: none; background: none; font-size: 18px;
+    cursor: pointer; color: #8a8880; padding: 4px 8px;
+  }
+  .modal-figure {
+    margin: 4px auto 12px; width: 140px; height: 140px;
+    border: 2px dashed #cfcdc4; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #a8a69d; font-size: 11px; text-align: center; padding: 8px; box-sizing: border-box;
+  }
+  .modal-name { font-weight: 600; font-size: 16px; margin: 0 0 8px; }
+  .modal-explain { font-size: 13px; color: #55534c; margin: 0 0 10px; line-height: 1.4; }
+  .modal-detail { color: #6b6a63; font-size: 14px; margin: 0; }
+</style>
+</head>
+<body>
+
+<h1>Running strength &amp; PT routine</h1>
+<p class="subtitle">Progress saves to your account &middot; tap any exercise for a quick visual</p>
+<p class="sync-note" id="sync-note"></p>
+
+<div class="stats">
+  <div class="stat-card"><p class="stat-label">Week</p><p class="stat-value" id="stat-week">1</p></div>
+  <div class="stat-card"><p class="stat-label">Training days</p><p class="stat-value" id="stat-train">0 / 5</p></div>
+  <div class="stat-card"><p class="stat-label">Streak</p><p class="stat-value" id="stat-streak">0 days</p></div>
+</div>
+
+<p class="hint">Tap a day to view it &middot; tap the small button in the corner to mark it a run day</p>
+<div class="day-grid" id="day-grid"></div>
+
+<div class="card pt">
+  <div class="card-header">
+    <span class="card-title">Daily PT — every day</span>
+    <span class="card-sub" id="pt-progress">0 / 12</span>
+  </div>
+  <div id="pt-list"></div>
+</div>
+
+<div class="card today" id="today-card"></div>
+
+<button id="next-week">Advance to next week</button>
+<button id="reset-progress">Reset all progress</button>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close" id="modal-close">&times;</button>
+    <p class="modal-name" id="modal-name"></p>
+    <div class="modal-figure" id="modal-figure"></div>
+    <p class="modal-explain" id="modal-explain"></p>
+    <p class="modal-detail" id="modal-detail"></p>
+  </div>
+</div>
+
+<script>
+const EXPLANATIONS = {
+  stand: 'Stand tall with feet hip-width apart.',
+  squat: 'Bend your knees and push your hips back like sitting into a chair, then stand.',
+  lunge: 'Step forward, bend both knees to about 90°, then push back up.',
+  bridge: 'Lie on your back, knees bent, and lift your hips toward the ceiling.',
+  plank: 'Hold a straight line from shoulders to heels, core braced.',
+  pushup: 'Lower your chest to the floor, then push back up.',
+  side_plank: 'Prop up on one forearm, hips lifted, body in a straight line.',
+  side_leg: 'Lying on your side, lift your top leg straight up, then lower.',
+  clamshell: 'Lying on your side with knees bent and feet together, open your top knee like a book.',
+  side_adduction: 'Lying on your side, top leg bent forward, lift your bottom leg up to meet it.',
+  calf_wall_stretch: 'Hands on the wall, back leg straight with heel down, lean in.',
+  hip_flexor_kneel: 'Kneel with one leg forward, push your hips forward to stretch.',
+  quad_stretch_standing: 'Standing on one leg, pull the other heel toward your glute.',
+  figure4_lying: 'Lying down, cross one ankle over the opposite knee and pull the thigh toward your chest.',
+  pilates_hundred: 'Curl up, legs raised, pump your straight arms up and down.',
+  pilates_rollup: 'Curl your spine up off the floor, reaching toward your toes.',
+  pilates_single_leg: 'Curl up, hug one knee to your chest while the other leg extends out.',
+  bird_dog: 'On hands and knees, extend one arm and the opposite leg out straight.',
+  deadbug: 'Lying on your back, lower one arm and the opposite leg toward the floor.',
+  running: 'Drive your knee up high with each step.',
+  a_skip: 'Drive your knee up high with a light hop on the standing leg.',
+  butt_kick: 'Kick your heel up toward your glute as you jog in place.',
+  leg_swing: 'Holding onto something for support, swing one leg forward and back.',
+  calf_raise: 'Rise up onto your toes, then lower back down.',
+  wgs_stretch: 'From a deep lunge, rotate your torso and reach one arm up toward the ceiling.',
+  foot_toega: 'Lift your big toe while pressing the other four down flat.',
+  foot_arch_dome: 'Without curling your toes, lift your arch to shorten your foot.',
+  foot_big_toe_abd: 'Pull your big toe away from the other toes, sideways.',
+  foot_ankle_circle: 'Slowly circle your foot around at the ankle joint.',
+  neck_cerv_extension: 'Gently tip your chin up and back.',
+  neck_cerv_rotation: 'Slowly turn your head to look over one shoulder.',
+  neck_upper_trap: 'Tilt your ear toward your shoulder while the other shoulder drops down.',
+  neck_chin_tuck: 'Draw your chin straight back, like making a "double chin".',
+  step_up: 'Step one foot onto a raised surface and stand up through it.',
+  swimming: 'Lying face down, lift one arm and the opposite leg at the same time.',
+  wall_drill: 'Hands on the wall, drive one knee up and down explosively.',
+  band_hip_abduction: 'Band anchored to your side and looped around your ankle, pull that leg out sideways against the resistance.',
+  side_plank_reach: 'From a kneeling side plank, reach your top arm forward and top leg back.'
+};
+
+const TRAIN_TYPES = [
+  { key:'strength_lower', label:'Strength · lower body', icon:'💪',
+    exercises:[
+      {name:'Bodyweight squats', base:{sets:3, reps:12}, pose:'squat', cat:'standing'},
+      {name:'Walking lunges', base:{sets:3, reps:10}, pose:'lunge', cat:'standing'},
+      {name:'Single-leg glute bridge', base:{sets:3, reps:10}, pose:'bridge', cat:'floor'},
+      {name:'Calf raises', base:{sets:3, reps:15}, pose:'calf_raise', cat:'standing'},
+      {name:'Side-lying leg raises', base:{sets:2, reps:12}, pose:'side_leg', cat:'floor'},
+      {name:'Plank hold (1 min)', fixed:'1 × 60s hold', pose:'plank', cat:'floor'}
+    ]},
+  { key:'mobility_stretch', label:'Mobility & stretch', icon:'🧘',
+    exercises:[
+      {name:'Hip flexor stretch', base:{sets:2, hold:30}, pose:'hip_flexor_kneel', cat:'standing'},
+      {name:'Standing quad stretch', base:{sets:2, hold:30}, pose:'quad_stretch_standing', cat:'standing'},
+      {name:'Figure-4 glute stretch', base:{sets:2, hold:30}, pose:'figure4_lying', cat:'floor'},
+      {name:'Calf stretch on wall', base:{sets:2, hold:30}, pose:'calf_wall_stretch', cat:'standing'},
+      {name:"World's greatest stretch", base:{sets:2, reps:6}, pose:'wgs_stretch', cat:'standing'},
+      {name:'Plank hold (1 min)', fixed:'1 × 60s hold', pose:'plank', cat:'floor'}
+    ]},
+  { key:'pilates_core', label:'Pilates core', icon:'☯',
+    exercises:[
+      {name:'Hundred', base:{sets:1, reps:60}, pose:'pilates_hundred', cat:'floor'},
+      {name:'Roll-up', base:{sets:2, reps:8}, pose:'pilates_rollup', cat:'floor'},
+      {name:'Single-leg stretch', base:{sets:2, reps:10}, pose:'pilates_single_leg', cat:'floor'},
+      {name:'Swimming', base:{sets:2, reps:12}, pose:'swimming', cat:'floor'},
+      {name:'Plank hold (1 min)', fixed:'1 × 60s hold', pose:'plank', cat:'floor'},
+      {name:'Side plank hold (30s)', fixed:'2 × 30s hold', pose:'side_plank', cat:'floor'},
+      {name:'Side plank reach (knee-supported)', fixed:'10 reps each side', pose:'side_plank_reach', cat:'floor'}
+    ]},
+  { key:'strength_full', label:'Strength · full body', icon:'💪',
+    exercises:[
+      {name:'Push-ups', base:{sets:3, reps:8}, pose:'pushup', cat:'floor'},
+      {name:'Step-ups', base:{sets:3, reps:10}, pose:'step_up', cat:'standing'},
+      {name:'Plank', base:{sets:3, hold:30}, pose:'plank', cat:'floor'},
+      {name:'Bird dog', base:{sets:2, reps:10}, pose:'bird_dog', cat:'floor'},
+      {name:'Deadbug', base:{sets:2, reps:10}, pose:'deadbug', cat:'floor'}
+    ]},
+  { key:'running_drills', label:'Running drills & mobility', icon:'🏃',
+    exercises:[
+      {name:'High knees', base:{sets:2, reps:20}, pose:'running', cat:'standing'},
+      {name:'Butt kicks', base:{sets:2, reps:20}, pose:'butt_kick', cat:'standing'},
+      {name:'Leg swings (front/side)', base:{sets:2, reps:12}, pose:'leg_swing', cat:'standing'},
+      {name:'Ankle circles', base:{sets:2, reps:10}, pose:'foot_ankle_circle', cat:'standing'},
+      {name:'A-skips', base:{sets:2, reps:20}, pose:'a_skip', cat:'standing'},
+      {name:'Plank hold (1 min)', fixed:'1 × 60s hold', pose:'plank', cat:'floor'}
+    ]}
+];
+
+const PT_EXERCISES = [
+  {name:'Side-lying adduction (R, ankle weight)', detail:'2 × 15', freq:1, pose:'side_adduction', cat:'floor'},
+  {name:'Clamshells (bilateral)', detail:'1 × 30', freq:1, pose:'clamshell', cat:'floor'},
+  {name:'Offset glute bridge (bilateral)', detail:'2 × 10', freq:1, pose:'bridge', cat:'floor'},
+  {name:'Toega (alternating, bilateral)', detail:'1 × 10', freq:1, pose:'foot_toega', cat:'seated'},
+  {name:'Standing arch doming (bilateral)', detail:'5s hold × 15', freq:2, pose:'foot_arch_dome', cat:'standing'},
+  {name:'Big toe abduction (bilateral)', detail:'1 × 15', freq:1, pose:'foot_big_toe_abd', cat:'seated'},
+  {name:'Cervical extension SNAGs', detail:'× 10', freq:1, pose:'neck_cerv_extension', cat:'head'},
+  {name:'Cervical rotation SNAGs', detail:'× 10 each side', freq:1, pose:'neck_cerv_rotation', cat:'head'},
+  {name:'Upper trap stretch', detail:'3 × 30s hold', freq:1, pose:'neck_upper_trap', cat:'head'},
+  {name:'Chin tuck', detail:'3s hold × 15', freq:1, pose:'neck_chin_tuck', cat:'head'},
+  {name:'Triple extension wall drill', detail:'5 × 6', freq:1, pose:'wall_drill', cat:'standing'},
+  {name:'Banded lateral leg pull (ankle band)', detail:'2 × 15 each side', freq:1, pose:'band_hip_abduction', cat:'standing'}
+];
+
+const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const CAT_ORDER = ['standing','floor','seated','head'];
+const CAT_LABELS = { standing:'Standing', floor:'On the floor', seated:'Seated / feet', head:'Head & neck' };
+
+// Hardcoded until accounts exist; becomes the logged-in user's id once auth is added.
+const USER_ID = 'default';
+
+let state = { week: 1, day: 0, completed: {}, streak: 0, pt: {}, runDays: [false,false,false,false,false,false,false] };
+
+async function loadState(){
+  try {
+    const res = await fetch('/api/pt-state?user=' + encodeURIComponent(USER_ID));
+    if(res.ok){
+      const data = await res.json();
+      if(data && data.state) Object.assign(state, data.state);
+    }
+  } catch(e) {}
+}
+
+let saveTimer = null;
+function saveState(){
+  const syncNote = document.getElementById('sync-note');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    fetch('/api/pt-state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user: USER_ID, state })
+    })
+    .then(res=>{ if(!res.ok) throw new Error('save failed'); syncNote.textContent = ''; })
+    .catch(()=>{ syncNote.textContent = "Couldn't save — check your connection."; });
+  }, 400);
+}
+
+function groupByCat(list){
+  const groups = {};
+  list.forEach((ex, idx)=>{
+    const c = ex.cat || 'standing';
+    if(!groups[c]) groups[c] = [];
+    groups[c].push({ex, idx});
+  });
+  return CAT_ORDER.filter(c=>groups[c]).map(c=>({ cat:c, label:CAT_LABELS[c], items:groups[c] }));
+}
+
+function computeSchedule(){
+  let trainIdx = 0;
+  return state.runDays.map(isRun=>{
+    if(isRun) return { type:'run', label:'Run day', icon:'🏃', exercises:[] };
+    const t = TRAIN_TYPES[trainIdx % TRAIN_TYPES.length];
+    trainIdx++;
+    return Object.assign({type:'train'}, t);
+  });
+}
+
+function scale(base, week){
+  const mult = 1 + (Math.min(week,6)-1)*0.15;
+  const out = {};
+  if(base.reps) out.reps = Math.round(base.reps * mult);
+  if(base.hold) out.hold = Math.round(base.hold * mult);
+  out.sets = base.sets + Math.floor((week-1)/3);
+  return out;
+}
+
+function dayKey(){ return 'w'+state.week+'_d'+state.day; }
+function ptKey(idx, slot){ return 'w'+state.week+'_d'+state.day+'_pt_'+idx+'_'+slot; }
+
+function openModal(name, detail, poseKey){
+  document.getElementById('modal-figure').innerHTML = '<span style="font-size:20px;">🖼</span><span>Illustration coming soon<br><span style="font-size:10px; opacity:0.7;">(' + poseKey + ')</span></span>';
+  document.getElementById('modal-name').textContent = name;
+  document.getElementById('modal-explain').textContent = EXPLANATIONS[poseKey] || '';
+  document.getElementById('modal-detail').textContent = detail;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+document.getElementById('modal-close').onclick = ()=>{ document.getElementById('modal-overlay').classList.remove('open'); };
+document.getElementById('modal-overlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'modal-overlay') e.target.classList.remove('open');
+});
+
+function render(){
+  const schedule = computeSchedule();
+  const weekTrainDone = schedule.filter((d,i)=>d.type==='train' && state.completed['w'+state.week+'_d'+i]).length;
+  const trainTotal = schedule.filter(d=>d.type==='train').length;
+  const today = schedule[state.day];
+
+  document.getElementById('stat-week').textContent = state.week;
+  document.getElementById('stat-train').textContent = weekTrainDone + ' / ' + trainTotal;
+  document.getElementById('stat-streak').textContent = state.streak + ' days';
+
+  const grid = document.getElementById('day-grid');
+  grid.innerHTML = '';
+  schedule.forEach((d,i)=>{
+    const done = state.completed['w'+state.week+'_d'+i];
+    const tile = document.createElement('div');
+    tile.className = 'day-tile' + (i===state.day ? ' active' : '') + (done ? ' done' : '');
+    tile.innerHTML = '<span class="dlabel">'+DAY_LABELS[i]+'</span><span class="dicon">'+d.icon+'</span>' + (done ? '<span style="font-size:10px;">✓</span>' : '');
+    const toggle = document.createElement('button');
+    toggle.className = 'toggle-btn-small';
+    toggle.textContent = '⇄';
+    toggle.onclick = (e)=>{ e.stopPropagation(); state.runDays[i] = !state.runDays[i]; saveState(); render(); };
+    tile.appendChild(toggle);
+    tile.addEventListener('click', ()=>{ state.day = i; saveState(); render(); });
+    grid.appendChild(tile);
+  });
+
+  const ptDoneToday = PT_EXERCISES.reduce((acc,ex,idx)=>{
+    for(let s=0;s<ex.freq;s++){ if(state.pt[ptKey(idx,s)]) acc++; }
+    return acc;
+  },0);
+  const ptTotalToday = PT_EXERCISES.reduce((acc,ex)=>acc+ex.freq,0);
+  document.getElementById('pt-progress').textContent = ptDoneToday + ' / ' + ptTotalToday;
+
+  const ptList = document.getElementById('pt-list');
+  ptList.innerHTML = '';
+  groupByCat(PT_EXERCISES).forEach(group=>{
+    const heading = document.createElement('p');
+    heading.style.cssText = 'font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:#8a8880; margin:10px 0 2px;';
+    heading.textContent = group.label;
+    ptList.appendChild(heading);
+    group.items.forEach(({ex, idx})=>{
+      const row = document.createElement('div');
+      row.className = 'ex-row';
+      const left = document.createElement('div');
+      left.className = 'ex-name';
+      left.innerHTML = ex.name + ' <span class="ex-detail">' + ex.detail + (ex.freq===2 ? ' · 2×/day' : '') + '</span>';
+      left.onclick = ()=> openModal(ex.name, ex.detail + (ex.freq===2 ? ' · 2×/day' : ''), ex.pose);
+      row.appendChild(left);
+      const btnGroup = document.createElement('div');
+      for(let s=0;s<ex.freq;s++){
+        const done = state.pt[ptKey(idx,s)];
+        const btn = document.createElement('button');
+        btn.className = 'pt-btn' + (done ? ' done' : '');
+        btn.textContent = ex.freq===2 ? (s===0 ? 'AM' : 'PM') : '✓';
+        btn.onclick = (e)=>{
+          e.stopPropagation();
+          const k = ptKey(idx, s);
+          if(state.pt[k]) delete state.pt[k]; else state.pt[k] = true;
+          saveState();
+          render();
+        };
+        btnGroup.appendChild(btn);
+      }
+      row.appendChild(btnGroup);
+      ptList.appendChild(row);
+    });
+  });
+
+  const todayCard = document.getElementById('today-card');
+  todayCard.innerHTML = '';
+  const header = document.createElement('div');
+  header.className = 'card-header';
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'card-title';
+  titleWrap.textContent = today.icon + ' ' + DAY_LABELS[state.day] + ' · ' + today.label;
+  header.appendChild(titleWrap);
+  const doneToday = state.completed[dayKey()];
+  const markBtn = document.createElement('button');
+  markBtn.textContent = doneToday ? 'Completed' : 'Mark done';
+  markBtn.onclick = ()=>{
+    const k = dayKey();
+    if(state.completed[k]){ delete state.completed[k]; state.streak = Math.max(0,state.streak-1); }
+    else { state.completed[k] = true; state.streak += 1; }
+    saveState();
+    render();
+  };
+  header.appendChild(markBtn);
+  todayCard.appendChild(header);
+
+  if(today.type === 'run'){
+    const note = document.createElement('p');
+    note.className = 'run-note';
+    note.textContent = 'No structured cross-training today — just your run, plus the PT exercises above.';
+    todayCard.appendChild(note);
+  } else {
+    groupByCat(today.exercises).forEach(group=>{
+      const heading = document.createElement('p');
+      heading.style.cssText = 'font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:#8a8880; margin:10px 0 2px;';
+      heading.textContent = group.label;
+      todayCard.appendChild(heading);
+      group.items.forEach(({ex})=>{
+        let detail;
+        if(ex.fixed){ detail = ex.fixed; }
+        else { const s = scale(ex.base, state.week); detail = s.sets + ' × ' + (s.reps !== undefined ? s.reps + ' reps' : s.hold + 's hold'); }
+        const row = document.createElement('div');
+        row.className = 'ex-row';
+        row.innerHTML = '<span class="ex-name">'+ex.name+'</span><span class="ex-detail">'+detail+'</span>';
+        row.onclick = ()=> openModal(ex.name, detail, ex.pose);
+        todayCard.appendChild(row);
+      });
+    });
+  }
+}
+
+document.getElementById('next-week').onclick = ()=>{
+  state.week += 1;
+  state.day = 0;
+  saveState();
+  render();
+};
+document.getElementById('reset-progress').onclick = ()=>{
+  if(!confirm('Reset all saved progress? This cannot be undone.')) return;
+  state = { week: 1, day: 0, completed: {}, streak: 0, pt: {}, runDays: [false,false,false,false,false,false,false] };
+  saveState();
+  render();
+};
+
+(async function init(){
+  render();
+  await loadState();
+  render();
+})();
+</script>
+</body>
+</html>
