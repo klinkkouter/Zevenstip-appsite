@@ -28,12 +28,22 @@
   }
   button:active { transform: scale(0.98); }
   .error { color: #b3562e; font-size: 13px; margin: 0 0 12px; min-height: 16px; }
+  textarea {
+    width: 100%; font-family: inherit; font-size: 14px; padding: 8px 10px;
+    border: 1px solid #ccc; border-radius: 8px; margin-bottom: 14px; box-sizing: border-box;
+    resize: vertical; min-height: 60px;
+  }
+  .link-row { text-align: center; font-size: 13px; margin-top: 14px; }
+  .link-row a { color: #b3562e; cursor: pointer; }
+  .hidden { display: none; }
+  .success { font-size: 14px; color: #3a7d44; text-align: center; margin: 0; }
 </style>
 </head>
 <body>
 
 <h1>Running strength &amp; PT routine</h1>
-<div class="card">
+
+<div class="card" id="login-card">
   <p class="error" id="error"></p>
   <form id="login-form">
     <label for="email">Email</label>
@@ -42,6 +52,25 @@
     <input type="password" id="password" required autocomplete="current-password">
     <button type="submit">Log in</button>
   </form>
+  <p class="link-row"><a id="show-request">Don't have an account? Request access</a></p>
+</div>
+
+<div class="card hidden" id="request-card">
+  <p class="error" id="request-error"></p>
+  <form id="request-form">
+    <label for="req-name">Your name</label>
+    <input type="text" id="req-name" required>
+    <label for="req-email">Your email</label>
+    <input type="email" id="req-email" required>
+    <label for="req-message">Message (optional)</label>
+    <textarea id="req-message" placeholder="e.g. who you are / who referred you"></textarea>
+    <button type="submit">Request access</button>
+  </form>
+  <p class="link-row"><a id="show-login">Back to log in</a></p>
+</div>
+
+<div class="card hidden" id="request-success">
+  <p class="success">Thanks — your request has been sent. You'll hear back once your account is set up.</p>
 </div>
 
 <script>
@@ -64,6 +93,42 @@ document.getElementById('login-form').addEventListener('submit', async (e)=>{
     }
     const params = new URLSearchParams(window.location.search);
     window.location.href = params.get('next') || '/pt/';
+  } catch (err) {
+    errorEl.textContent = "Couldn't reach the server — check your connection.";
+  }
+});
+
+document.getElementById('show-request').addEventListener('click', ()=>{
+  document.getElementById('login-card').classList.add('hidden');
+  document.getElementById('request-card').classList.remove('hidden');
+});
+document.getElementById('show-login').addEventListener('click', ()=>{
+  document.getElementById('request-card').classList.add('hidden');
+  document.getElementById('login-card').classList.remove('hidden');
+});
+
+document.getElementById('request-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const errorEl = document.getElementById('request-error');
+  errorEl.textContent = '';
+  const body = {
+    name: document.getElementById('req-name').value.trim(),
+    email: document.getElementById('req-email').value.trim(),
+    message: document.getElementById('req-message').value.trim()
+  };
+  try {
+    const res = await fetch('/api/auth/request-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(()=>({}));
+      errorEl.textContent = data.error || 'Could not send request.';
+      return;
+    }
+    document.getElementById('request-card').classList.add('hidden');
+    document.getElementById('request-success').classList.remove('hidden');
   } catch (err) {
     errorEl.textContent = "Couldn't reach the server — check your connection.";
   }
