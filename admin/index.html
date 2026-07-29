@@ -125,6 +125,26 @@ async function loadUsers(){
       alert(res.ok ? 'Password updated.' : 'Could not update password.');
     };
     actionCell.appendChild(resetBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'reset-btn';
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.onclick = async ()=>{
+      if (!confirm('Delete ' + u.name + '\'s account? This also deletes their saved progress. This cannot be undone.')) return;
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: u.id })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(()=>({}));
+        alert(data.error || 'Could not delete account.');
+        return;
+      }
+      loadUsers();
+    };
+    actionCell.appendChild(deleteBtn);
+
     row.appendChild(actionCell);
     body.appendChild(row);
   });

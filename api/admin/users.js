@@ -55,6 +55,29 @@ module.exports = async (req, res) => {
       return;
     }
 
+    if (req.method === 'DELETE') {
+      const { userId } = req.body || {};
+      if (!userId) {
+        res.status(400).json({ error: 'Missing userId' });
+        return;
+      }
+      if (userId === caller.id) {
+        res.status(400).json({ error: "You can't delete your own account" });
+        return;
+      }
+      await client.query('DELETE FROM users WHERE id = $1', [userId]);
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS pt_app_state (
+          user_id TEXT PRIMARY KEY,
+          state JSONB NOT NULL,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+      await client.query('DELETE FROM pt_app_state WHERE user_id = $1', [userId]);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
     res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
     console.error(err);
