@@ -1,15 +1,5 @@
-const { Pool } = require('pg');
-
-let pool;
-function getPool() {
-  if (!pool) {
-    const connectionString =
-      process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL;
-    if (!connectionString) throw new Error('No Postgres connection string found in environment');
-    pool = new Pool({ connectionString, ssl: { rejectUnauthorized: false } });
-  }
-  return pool;
-}
+const { getPool } = require('./_lib/db');
+const { ensureAuthTables, getSessionUser } = require('./_lib/auth');
 
 async function ensureTable(client) {
   await client.query(`
@@ -25,17 +15,23 @@ module.exports = async (req, res) => {
   const client = await getPool().connect();
   try {
     await ensureTable(client);
+    await ensureAuthTables(client);
+
+    const sessionUser = await getSessionUser(client, req);
+    if (!sessionUser) {
+      res.status(401).json({ error: 'Not logged in' });
+      return;
+    }
+    const userId = sessionUser.id;
 
     if (req.method === 'GET') {
-      const userId = (req.query.user || 'default').toString();
       const result = await client.query('SELECT state FROM pt_app_state WHERE user_id = $1', [userId]);
       res.status(200).json({ state: result.rows[0] ? result.rows[0].state : null });
       return;
     }
 
     if (req.method === 'POST') {
-      const { user, state } = req.body || {};
-      const userId = (user || 'default').toString();
+      const { state } = req.body || {};
       if (!state || typeof state !== 'object') {
         res.status(400).json({ error: 'Missing state' });
         return;

@@ -78,10 +78,13 @@
   .modal-name { font-weight: 600; font-size: 16px; margin: 0 0 8px; }
   .modal-explain { font-size: 13px; color: #55534c; margin: 0 0 10px; line-height: 1.4; }
   .modal-detail { color: #6b6a63; font-size: 14px; margin: 0; }
+  .user-bar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-size: 13px; color: #6b6a63; margin-bottom: 4px; }
+  .user-bar a, .user-bar button { font-size: 12px; padding: 4px 10px; }
 </style>
 </head>
 <body>
 
+<div class="user-bar" id="user-bar"></div>
 <h1>Running strength &amp; PT routine</h1>
 <p class="subtitle">Progress saves to your account &middot; tap any exercise for a quick visual</p>
 <p class="sync-note" id="sync-note"></p>
@@ -230,14 +233,11 @@ const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const CAT_ORDER = ['standing','floor','seated','head'];
 const CAT_LABELS = { standing:'Standing', floor:'On the floor', seated:'Seated / feet', head:'Head & neck' };
 
-// Hardcoded until accounts exist; becomes the logged-in user's id once auth is added.
-const USER_ID = 'default';
-
 let state = { week: 1, day: 0, completed: {}, streak: 0, pt: {}, runDays: [false,false,false,false,false,false,false] };
 
 async function loadState(){
   try {
-    const res = await fetch('/api/pt-state?user=' + encodeURIComponent(USER_ID));
+    const res = await fetch('/api/pt-state');
     if(res.ok){
       const data = await res.json();
       if(data && data.state) Object.assign(state, data.state);
@@ -253,9 +253,13 @@ function saveState(){
     fetch('/api/pt-state', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user: USER_ID, state })
+      body: JSON.stringify({ state })
     })
-    .then(res=>{ if(!res.ok) throw new Error('save failed'); syncNote.textContent = ''; })
+    .then(res=>{
+      if(res.status === 401){ window.location.href = '/login/?next=/pt/'; return; }
+      if(!res.ok) throw new Error('save failed');
+      syncNote.textContent = '';
+    })
     .catch(()=>{ syncNote.textContent = "Couldn't save — check your connection."; });
   }, 400);
 }
@@ -439,7 +443,42 @@ document.getElementById('reset-progress').onclick = ()=>{
   render();
 };
 
+async function checkAuth(){
+  try {
+    const res = await fetch('/api/auth/me');
+    if(!res.ok){ window.location.href = '/login/?next=/pt/'; return null; }
+    return await res.json();
+  } catch(e) {
+    window.location.href = '/login/?next=/pt/';
+    return null;
+  }
+}
+
+function renderUserBar(user){
+  const bar = document.getElementById('user-bar');
+  bar.innerHTML = '';
+  const label = document.createElement('span');
+  label.textContent = 'Hi, ' + user.name;
+  bar.appendChild(label);
+  if(user.role === 'admin'){
+    const adminLink = document.createElement('a');
+    adminLink.href = '/admin/';
+    adminLink.textContent = 'Admin';
+    bar.appendChild(adminLink);
+  }
+  const logoutBtn = document.createElement('button');
+  logoutBtn.textContent = 'Log out';
+  logoutBtn.onclick = async ()=>{
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(()=>{});
+    window.location.href = '/login/';
+  };
+  bar.appendChild(logoutBtn);
+}
+
 (async function init(){
+  const user = await checkAuth();
+  if(!user) return;
+  renderUserBar(user);
   render();
   await loadState();
   render();

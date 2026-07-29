@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Log in — Zevenstip</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 360px;
+    margin: 80px auto;
+    padding: 0 16px;
+    background: #f7f6f2;
+    color: #1a1a18;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 20px; text-align: center; }
+  .card { background: #fff; border: 1px solid #e4e2da; border-radius: 12px; padding: 24px; }
+  label { display: block; font-size: 13px; color: #6b6a63; margin: 0 0 4px; }
+  input {
+    width: 100%; font-family: inherit; font-size: 14px; padding: 8px 10px;
+    border: 1px solid #ccc; border-radius: 8px; margin-bottom: 14px; box-sizing: border-box;
+  }
+  button {
+    width: 100%; font-family: inherit; font-size: 14px; font-weight: 600; padding: 10px;
+    border-radius: 8px; border: none; background: #b3562e; color: #fff; cursor: pointer;
+  }
+  button:active { transform: scale(0.98); }
+  .error { color: #b3562e; font-size: 13px; margin: 0 0 12px; min-height: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Running strength &amp; PT routine</h1>
+<div class="card">
+  <p class="error" id="error"></p>
+  <form id="login-form">
+    <label for="email">Email</label>
+    <input type="email" id="email" required autocomplete="username">
+    <label for="password">Password</label>
+    <input type="password" id="password" required autocomplete="current-password">
+    <button type="submit">Log in</button>
+  </form>
+</div>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errorEl = document.getElementById('error');
+  errorEl.textContent = '';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(()=>({}));
+      errorEl.textContent = data.error || 'Could not log in.';
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = params.get('next') || '/pt/';
+  } catch (err) {
+    errorEl.textContent = "Couldn't reach the server — check your connection.";
+  }
+});
+</script>
+</body>
+</html>
