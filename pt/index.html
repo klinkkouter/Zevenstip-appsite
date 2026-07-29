@@ -49,7 +49,9 @@
   button:active { transform: scale(0.98); }
   .pt-btn { font-size: 12px; padding: 4px 10px; }
   .pt-btn.done { background: #faece7; border-color: #b3562e; color: #712b13; }
-  #next-week { width: 100%; margin-top: 8px; }
+  .week-nav { display: flex; gap: 8px; margin-top: 8px; }
+  .week-nav button { flex: 1; }
+  .week-nav button:disabled { opacity: 0.4; cursor: default; }
   #reset-progress { width: 100%; margin-top: 8px; color: #8a8880; }
   .run-note { font-size: 14px; color: #6b6a63; margin: 0; }
   .sync-note { font-size: 11px; color: #b3562e; margin: -12px 0 16px; min-height: 14px; }
@@ -103,7 +105,10 @@
 
 <div class="card today" id="today-card"></div>
 
-<button id="next-week">Advance to next week</button>
+<div class="week-nav">
+  <button id="prev-week">&larr; Previous week</button>
+  <button id="next-week">Next week &rarr;</button>
+</div>
 <button id="reset-progress">Reset all progress</button>
 
 <div class="modal-overlay" id="modal-overlay">
@@ -306,6 +311,7 @@ function render(){
   const today = schedule[state.day];
 
   document.getElementById('stat-week').textContent = state.week;
+  document.getElementById('prev-week').disabled = state.week <= 1;
   document.getElementById('stat-train').textContent = weekTrainDone + ' / ' + trainTotal;
   document.getElementById('stat-streak').textContent = state.streak + ' days';
 
@@ -413,6 +419,13 @@ function render(){
   }
 }
 
+document.getElementById('prev-week').onclick = ()=>{
+  if(state.week <= 1) return;
+  state.week -= 1;
+  state.day = 0;
+  saveState();
+  render();
+};
 document.getElementById('next-week').onclick = ()=>{
   state.week += 1;
   state.day = 0;
