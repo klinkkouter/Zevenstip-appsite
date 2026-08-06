@@ -16,38 +16,38 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {
       const result = await client.query(
-        'SELECT id, name, detail, freq, pose, cat FROM pt_exercise_library ORDER BY cat, name'
+        'SELECT id, name, detail, freq, explanation, cat FROM pt_exercise_library ORDER BY cat, name'
       );
       res.status(200).json({ exercises: result.rows });
       return;
     }
 
     if (req.method === 'POST') {
-      const { name, detail, freq, pose, cat } = req.body || {};
-      if (!name || !detail || !pose || !['standing', 'floor', 'seated', 'head'].includes(cat)) {
+      const { name, detail, freq, explanation, cat } = req.body || {};
+      if (!name || !detail || !explanation || !['standing', 'floor', 'seated', 'head'].includes(cat)) {
         res.status(400).json({ error: 'Missing or invalid fields' });
         return;
       }
       const id = crypto.randomUUID();
       await client.query(
-        'INSERT INTO pt_exercise_library (id, name, detail, freq, pose, cat) VALUES ($1, $2, $3, $4, $5, $6)',
-        [id, name, detail, freq === 2 ? 2 : 1, pose, cat]
+        'INSERT INTO pt_exercise_library (id, name, detail, freq, explanation, cat) VALUES ($1, $2, $3, $4, $5, $6)',
+        [id, name, detail, freq === 2 ? 2 : 1, explanation, cat]
       );
-      res.status(201).json({ id, name, detail, freq: freq === 2 ? 2 : 1, pose, cat });
+      res.status(201).json({ id, name, detail, freq: freq === 2 ? 2 : 1, explanation, cat });
       return;
     }
 
     if (req.method === 'PUT') {
-      const { id, name, detail, freq, pose, cat } = req.body || {};
-      if (!id || !name || !detail || !pose || !['standing', 'floor', 'seated', 'head'].includes(cat)) {
+      const { id, name, detail, freq, explanation, cat } = req.body || {};
+      if (!id || !name || !detail || !explanation || !['standing', 'floor', 'seated', 'head'].includes(cat)) {
         res.status(400).json({ error: 'Missing or invalid fields' });
         return;
       }
       await client.query(
-        'UPDATE pt_exercise_library SET name = $1, detail = $2, freq = $3, pose = $4, cat = $5 WHERE id = $6',
-        [name, detail, freq === 2 ? 2 : 1, pose, cat, id]
+        'UPDATE pt_exercise_library SET name = $1, detail = $2, freq = $3, explanation = $4, cat = $5 WHERE id = $6',
+        [name, detail, freq === 2 ? 2 : 1, explanation, cat, id]
       );
-      res.status(200).json({ id, name, detail, freq: freq === 2 ? 2 : 1, pose, cat });
+      res.status(200).json({ id, name, detail, freq: freq === 2 ? 2 : 1, explanation, cat });
       return;
     }
 
