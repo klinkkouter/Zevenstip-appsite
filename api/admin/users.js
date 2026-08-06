@@ -1,11 +1,15 @@
 const { getPool } = require('../_lib/db');
 const { ensureAuthTables, getSessionUser, createUser } = require('../_lib/auth');
 const { sendEmail } = require('../_lib/email');
+const { ensureExerciseLibraryTable } = require('../_lib/exercise-library');
+const { ensurePtAssignmentsTable, seedDefaultAssignmentsForUser } = require('../_lib/pt-assignments');
 
 module.exports = async (req, res) => {
   const client = await getPool().connect();
   try {
     await ensureAuthTables(client);
+    await ensureExerciseLibraryTable(client);
+    await ensurePtAssignmentsTable(client);
     const caller = await getSessionUser(client, req);
     if (!caller || caller.role !== 'admin') {
       res.status(403).json({ error: 'Admin only' });
@@ -34,6 +38,7 @@ module.exports = async (req, res) => {
         return;
       }
       const user = await createUser(client, { email, password, name, role });
+      await seedDefaultAssignmentsForUser(client, user.id);
 
       try {
         await sendEmail({

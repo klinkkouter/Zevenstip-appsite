@@ -214,20 +214,17 @@ const TRAIN_TYPES = [
     ]}
 ];
 
-const PT_EXERCISES = [
-  {name:'Side-lying adduction (R, ankle weight)', detail:'2 × 15', freq:1, pose:'side_adduction', cat:'floor'},
-  {name:'Clamshells (bilateral)', detail:'1 × 30', freq:1, pose:'clamshell', cat:'floor'},
-  {name:'Offset glute bridge (bilateral)', detail:'2 × 10', freq:1, pose:'bridge', cat:'floor'},
-  {name:'Toega (alternating, bilateral)', detail:'1 × 10', freq:1, pose:'foot_toega', cat:'seated'},
-  {name:'Standing arch doming (bilateral)', detail:'5s hold × 15', freq:2, pose:'foot_arch_dome', cat:'standing'},
-  {name:'Big toe abduction (bilateral)', detail:'1 × 15', freq:1, pose:'foot_big_toe_abd', cat:'seated'},
-  {name:'Cervical extension SNAGs', detail:'× 10', freq:1, pose:'neck_cerv_extension', cat:'head'},
-  {name:'Cervical rotation SNAGs', detail:'× 10 each side', freq:1, pose:'neck_cerv_rotation', cat:'head'},
-  {name:'Upper trap stretch', detail:'3 × 30s hold', freq:1, pose:'neck_upper_trap', cat:'head'},
-  {name:'Chin tuck', detail:'3s hold × 15', freq:1, pose:'neck_chin_tuck', cat:'head'},
-  {name:'Triple extension wall drill', detail:'5 × 6', freq:1, pose:'wall_drill', cat:'standing'},
-  {name:'Banded lateral leg pull (ankle band)', detail:'2 × 15 each side', freq:1, pose:'band_hip_abduction', cat:'standing'}
-];
+let PT_EXERCISES = [];
+
+async function loadPtProgram(){
+  try {
+    const res = await fetch('/api/pt-program');
+    if(res.ok){
+      const data = await res.json();
+      if(data && data.exercises) PT_EXERCISES = data.exercises;
+    }
+  } catch(e) {}
+}
 
 const DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const CAT_ORDER = ['standing','floor','seated','head'];
@@ -294,12 +291,12 @@ function scale(base, week){
 }
 
 function dayKey(){ return 'w'+state.week+'_d'+state.day; }
-function ptKey(idx, slot){ return 'w'+state.week+'_d'+state.day+'_pt_'+idx+'_'+slot; }
+function ptKey(id, slot){ return 'w'+state.week+'_d'+state.day+'_pt_'+id+'_'+slot; }
 
-function openModal(name, detail, poseKey){
-  document.getElementById('modal-figure').innerHTML = '<span style="font-size:20px;">🖼</span><span>Illustration coming soon<br><span style="font-size:10px; opacity:0.7;">(' + poseKey + ')</span></span>';
+function openModal(name, detail, cue, illustrationKey){
+  document.getElementById('modal-figure').innerHTML = '<span style="font-size:20px;">🖼</span><span>Illustration coming soon<br><span style="font-size:10px; opacity:0.7;">(' + (illustrationKey || '') + ')</span></span>';
   document.getElementById('modal-name').textContent = name;
-  document.getElementById('modal-explain').textContent = EXPLANATIONS[poseKey] || '';
+  document.getElementById('modal-explain').textContent = cue || '';
   document.getElementById('modal-detail').textContent = detail;
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -335,8 +332,8 @@ function render(){
     grid.appendChild(tile);
   });
 
-  const ptDoneToday = PT_EXERCISES.reduce((acc,ex,idx)=>{
-    for(let s=0;s<ex.freq;s++){ if(state.pt[ptKey(idx,s)]) acc++; }
+  const ptDoneToday = PT_EXERCISES.reduce((acc,ex)=>{
+    for(let s=0;s<ex.freq;s++){ if(state.pt[ptKey(ex.id,s)]) acc++; }
     return acc;
   },0);
   const ptTotalToday = PT_EXERCISES.reduce((acc,ex)=>acc+ex.freq,0);
@@ -349,23 +346,23 @@ function render(){
     heading.style.cssText = 'font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:#8a8880; margin:10px 0 2px;';
     heading.textContent = group.label;
     ptList.appendChild(heading);
-    group.items.forEach(({ex, idx})=>{
+    group.items.forEach(({ex})=>{
       const row = document.createElement('div');
       row.className = 'ex-row';
       const left = document.createElement('div');
       left.className = 'ex-name';
       left.innerHTML = ex.name + ' <span class="ex-detail">' + ex.detail + (ex.freq===2 ? ' · 2×/day' : '') + '</span>';
-      left.onclick = ()=> openModal(ex.name, ex.detail + (ex.freq===2 ? ' · 2×/day' : ''), ex.pose);
+      left.onclick = ()=> openModal(ex.name, ex.detail + (ex.freq===2 ? ' · 2×/day' : ''), ex.explanation);
       row.appendChild(left);
       const btnGroup = document.createElement('div');
       for(let s=0;s<ex.freq;s++){
-        const done = state.pt[ptKey(idx,s)];
+        const done = state.pt[ptKey(ex.id,s)];
         const btn = document.createElement('button');
         btn.className = 'pt-btn' + (done ? ' done' : '');
         btn.textContent = ex.freq===2 ? (s===0 ? 'AM' : 'PM') : '✓';
         btn.onclick = (e)=>{
           e.stopPropagation();
-          const k = ptKey(idx, s);
+          const k = ptKey(ex.id, s);
           if(state.pt[k]) delete state.pt[k]; else state.pt[k] = true;
           saveState();
           render();
@@ -416,7 +413,7 @@ function render(){
         const row = document.createElement('div');
         row.className = 'ex-row';
         row.innerHTML = '<span class="ex-name">'+ex.name+'</span><span class="ex-detail">'+detail+'</span>';
-        row.onclick = ()=> openModal(ex.name, detail, ex.pose);
+        row.onclick = ()=> openModal(ex.name, detail, EXPLANATIONS[ex.pose] || '', ex.pose);
         todayCard.appendChild(row);
       });
     });
@@ -480,7 +477,7 @@ function renderUserBar(user){
   if(!user) return;
   renderUserBar(user);
   render();
-  await loadState();
+  await Promise.all([loadState(), loadPtProgram()]);
   render();
 })();
 </script>

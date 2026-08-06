@@ -113,6 +113,14 @@ async function loadUsers(){
     const row = document.createElement('tr');
     row.innerHTML = '<td>'+u.name+'</td><td>'+u.email+'</td><td><span class="role-tag">'+u.role+'</span></td>';
     const actionCell = document.createElement('td');
+
+    const programLink = document.createElement('a');
+    programLink.className = 'reset-btn';
+    programLink.style.cssText = 'display:inline-block; text-decoration:none;';
+    programLink.href = '/admin/pt-program/?user=' + encodeURIComponent(u.id);
+    programLink.textContent = 'PT program';
+    actionCell.appendChild(programLink);
+
     const resetBtn = document.createElement('button');
     resetBtn.className = 'reset-btn';
     resetBtn.textContent = 'Reset password';
