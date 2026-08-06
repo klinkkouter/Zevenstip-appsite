@@ -48,6 +48,12 @@ async function ensureAuthTables(client) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+  // Links a client (role='user') to the PT who manages them. SET NULL on
+  // delete so removing a PT account gracefully unassigns their clients
+  // instead of blocking the delete.
+  await client.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS pt_id UUID REFERENCES users(id) ON DELETE SET NULL
+  `);
 }
 
 async function createUser(client, { email, password, name, role }) {

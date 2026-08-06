@@ -1,7 +1,7 @@
 const crypto = require('crypto');
-const { getPool } = require('../_lib/db');
-const { ensureAuthTables, getSessionUser } = require('../_lib/auth');
-const { ensureExerciseLibraryTable } = require('../_lib/exercise-library');
+const { getPool } = require('./_lib/db');
+const { ensureAuthTables, getSessionUser } = require('./_lib/auth');
+const { ensureExerciseLibraryTable } = require('./_lib/exercise-library');
 
 module.exports = async (req, res) => {
   const client = await getPool().connect();
@@ -9,8 +9,8 @@ module.exports = async (req, res) => {
     await ensureAuthTables(client);
     await ensureExerciseLibraryTable(client);
     const caller = await getSessionUser(client, req);
-    if (!caller || caller.role !== 'admin') {
-      res.status(403).json({ error: 'Admin only' });
+    if (!caller || (caller.role !== 'admin' && caller.role !== 'pt')) {
+      res.status(403).json({ error: 'Admin or PT only' });
       return;
     }
 
@@ -38,6 +38,10 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'PUT') {
+      if (caller.role !== 'admin') {
+        res.status(403).json({ error: 'Admin only' });
+        return;
+      }
       const { id, name, detail, freq, explanation, cat } = req.body || {};
       if (!id || !name || !detail || !explanation || !['standing', 'floor', 'seated', 'head'].includes(cat)) {
         res.status(400).json({ error: 'Missing or invalid fields' });
@@ -52,6 +56,10 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'DELETE') {
+      if (caller.role !== 'admin') {
+        res.status(403).json({ error: 'Admin only' });
+        return;
+      }
       const { id } = req.body || {};
       if (!id) {
         res.status(400).json({ error: 'Missing id' });

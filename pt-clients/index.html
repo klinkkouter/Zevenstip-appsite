@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>My clients — Zevenstip</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    background: #f7f6f2;
+    color: #1a1a18;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .subtitle { font-size: 13px; color: #6b6a63; margin: 0 0 20px; }
+  .card { background: #fff; border: 1px solid #e4e2da; border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
+  .client-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid #e4e2da; font-size: 14px; }
+  .client-row:first-child { border-top: none; }
+  .client-name { font-weight: 600; }
+  .client-email { color: #6b6a63; font-size: 13px; }
+  .client-row a { font-size: 13px; color: #b3562e; text-decoration: none; font-weight: 600; }
+  .empty-note { font-size: 13px; color: #8a8880; margin: 0; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .top-bar a { font-size: 13px; color: #b3562e; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div>
+    <h1>My clients</h1>
+    <p class="subtitle">People assigned to you</p>
+  </div>
+  <a href="/pt/">&larr; Back to app</a>
+</div>
+
+<div class="card">
+  <div id="clients-list"></div>
+</div>
+
+<script>
+async function requirePt(){
+  const res = await fetch('/api/auth/me');
+  if (!res.ok) { window.location.href = '/login/?next=/pt-clients/'; return null; }
+  const user = await res.json();
+  if (user.role === 'admin') { window.location.href = '/admin/'; return null; }
+  if (user.role !== 'pt') { window.location.href = '/pt/'; return null; }
+  return user;
+}
+
+async function loadClients(){
+  const res = await fetch('/api/pt-clients');
+  if (!res.ok) return;
+  const { clients } = await res.json();
+  const list = document.getElementById('clients-list');
+  list.innerHTML = '';
+  if (!clients.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty-note';
+    empty.textContent = 'No clients assigned to you yet — ask an admin to assign one.';
+    list.appendChild(empty);
+    return;
+  }
+  clients.forEach(c=>{
+    const row = document.createElement('div');
+    row.className = 'client-row';
+    const left = document.createElement('div');
+    left.innerHTML = '<div class="client-name">'+c.name+'</div><div class="client-email">'+c.email+'</div>';
+    row.appendChild(left);
+    const link = document.createElement('a');
+    link.href = '/admin/pt-program/?user=' + encodeURIComponent(c.id);
+    link.textContent = 'Manage program →';
+    row.appendChild(link);
+    list.appendChild(row);
+  });
+}
+
+(async function init(){
+  const user = await requirePt();
+  if (!user) return;
+  loadClients();
+})();
+</script>
+</body>
+</html>

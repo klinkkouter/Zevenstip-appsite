@@ -463,6 +463,12 @@ function renderUserBar(user){
     adminLink.textContent = 'Admin';
     bar.appendChild(adminLink);
   }
+  if(user.role === 'pt'){
+    const clientsLink = document.createElement('a');
+    clientsLink.href = '/pt-clients/';
+    clientsLink.textContent = 'My clients';
+    bar.appendChild(clientsLink);
+  }
   const logoutBtn = document.createElement('button');
   logoutBtn.textContent = 'Log out';
   logoutBtn.onclick = async ()=>{

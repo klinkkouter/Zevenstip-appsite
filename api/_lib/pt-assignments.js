@@ -31,4 +31,13 @@ async function seedDefaultAssignmentsForUser(client, userId) {
   }
 }
 
-module.exports = { ensurePtAssignmentsTable, seedDefaultAssignmentsForUser };
+// Whether `caller` is allowed to view/edit `targetUserId`'s PT program:
+// admins can manage anyone; a PT can only manage clients linked to them.
+async function canManageClient(client, caller, targetUserId) {
+  if (caller.role === 'admin') return true;
+  if (caller.role !== 'pt') return false;
+  const result = await client.query('SELECT pt_id FROM users WHERE id = $1', [targetUserId]);
+  return result.rows.length > 0 && result.rows[0].pt_id === caller.id;
+}
+
+module.exports = { ensurePtAssignmentsTable, seedDefaultAssignmentsForUser, canManageClient };

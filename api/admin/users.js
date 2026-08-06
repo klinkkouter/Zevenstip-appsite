@@ -18,9 +18,20 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {
       const result = await client.query(
-        'SELECT id, email, name, role, created_at FROM users ORDER BY created_at'
+        'SELECT id, email, name, role, pt_id, created_at FROM users ORDER BY created_at'
       );
       res.status(200).json({ users: result.rows });
+      return;
+    }
+
+    if (req.method === 'PUT') {
+      const { userId, ptId } = req.body || {};
+      if (!userId) {
+        res.status(400).json({ error: 'Missing userId' });
+        return;
+      }
+      await client.query('UPDATE users SET pt_id = $1 WHERE id = $2', [ptId || null, userId]);
+      res.status(200).json({ ok: true });
       return;
     }
 

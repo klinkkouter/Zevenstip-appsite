@@ -101,7 +101,7 @@ async function requireAdmin(){
 }
 
 async function loadExercises(){
-  const res = await fetch('/api/admin/exercise-library');
+  const res = await fetch('/api/exercise-library');
   if (!res.ok) return;
   const { exercises } = await res.json();
   const list = document.getElementById('exercises-list');
@@ -140,7 +140,7 @@ async function loadExercises(){
       deleteBtn.textContent = 'Delete';
       deleteBtn.onclick = async ()=>{
         if (!confirm('Remove "'+ex.name+'" from the library?')) return;
-        await fetch('/api/admin/exercise-library', {
+        await fetch('/api/exercise-library', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: ex.id })
@@ -195,7 +195,7 @@ document.getElementById('create-form').addEventListener('submit', async (e)=>{
     explanation: document.getElementById('explanation').value.trim()
   };
   if (editingId) body.id = editingId;
-  const res = await fetch('/api/admin/exercise-library', {
+  const res = await fetch('/api/exercise-library', {
     method: editingId ? 'PUT' : 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
