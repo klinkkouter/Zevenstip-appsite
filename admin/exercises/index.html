@@ -58,7 +58,7 @@
 </div>
 
 <div class="card">
-  <h2>Add an exercise</h2>
+  <h2 id="form-heading">Add an exercise</h2>
   <form id="create-form">
     <label for="name">Name</label>
     <input type="text" id="name" required>
@@ -78,9 +78,10 @@
     </select>
     <label for="pose">Movement (for the cue shown in the app)</label>
     <select id="pose"></select>
-    <button class="primary" type="submit">Add to library</button>
+    <button class="primary" type="submit" id="submit-btn">Add to library</button>
     <p class="msg" id="create-msg"></p>
   </form>
+  <button type="button" id="cancel-edit" style="display:none; width:100%; margin-top:8px;">Cancel edit</button>
 </div>
 
 <script>
@@ -137,6 +138,15 @@ async function loadExercises(){
       const left = document.createElement('div');
       left.innerHTML = '<div class="ex-name">'+ex.name+'</div><div class="ex-detail">'+ex.detail+(ex.freq===2 ? ' · 2×/day' : '')+' · '+poseLabel(ex.pose)+'</div>';
       row.appendChild(left);
+
+      const actions = document.createElement('div');
+
+      const modifyBtn = document.createElement('button');
+      modifyBtn.className = 'delete-btn';
+      modifyBtn.textContent = 'Modify';
+      modifyBtn.onclick = ()=> startEdit(ex);
+      actions.appendChild(modifyBtn);
+
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'delete-btn';
       deleteBtn.textContent = 'Delete';
@@ -149,11 +159,38 @@ async function loadExercises(){
         });
         loadExercises();
       };
-      row.appendChild(deleteBtn);
+      actions.appendChild(deleteBtn);
+
+      row.appendChild(actions);
       list.appendChild(row);
     });
   });
 }
+
+let editingId = null;
+
+function startEdit(ex){
+  editingId = ex.id;
+  document.getElementById('name').value = ex.name;
+  document.getElementById('detail').value = ex.detail;
+  document.getElementById('freq').value = String(ex.freq);
+  document.getElementById('cat').value = ex.cat;
+  document.getElementById('pose').value = ex.pose;
+  document.getElementById('form-heading').textContent = 'Edit exercise';
+  document.getElementById('submit-btn').textContent = 'Save changes';
+  document.getElementById('cancel-edit').style.display = 'block';
+  document.getElementById('name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function stopEdit(){
+  editingId = null;
+  document.getElementById('create-form').reset();
+  document.getElementById('form-heading').textContent = 'Add an exercise';
+  document.getElementById('submit-btn').textContent = 'Add to library';
+  document.getElementById('cancel-edit').style.display = 'none';
+}
+
+document.getElementById('cancel-edit').addEventListener('click', stopEdit);
 
 document.getElementById('create-form').addEventListener('submit', async (e)=>{
   e.preventDefault();
@@ -167,20 +204,21 @@ document.getElementById('create-form').addEventListener('submit', async (e)=>{
     cat: document.getElementById('cat').value,
     pose: document.getElementById('pose').value
   };
+  if (editingId) body.id = editingId;
   const res = await fetch('/api/admin/exercise-library', {
-    method: 'POST',
+    method: editingId ? 'PUT' : 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   if (!res.ok) {
     const data = await res.json().catch(()=>({}));
     msg.className = 'msg error';
-    msg.textContent = data.error || 'Could not add exercise.';
+    msg.textContent = data.error || 'Could not save exercise.';
     return;
   }
   msg.className = 'msg ok';
-  msg.textContent = 'Added.';
-  document.getElementById('create-form').reset();
+  msg.textContent = editingId ? 'Saved.' : 'Added.';
+  stopEdit();
   loadExercises();
 });
 

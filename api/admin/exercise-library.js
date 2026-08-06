@@ -37,6 +37,20 @@ module.exports = async (req, res) => {
       return;
     }
 
+    if (req.method === 'PUT') {
+      const { id, name, detail, freq, pose, cat } = req.body || {};
+      if (!id || !name || !detail || !pose || !['standing', 'floor', 'seated', 'head'].includes(cat)) {
+        res.status(400).json({ error: 'Missing or invalid fields' });
+        return;
+      }
+      await client.query(
+        'UPDATE pt_exercise_library SET name = $1, detail = $2, freq = $3, pose = $4, cat = $5 WHERE id = $6',
+        [name, detail, freq === 2 ? 2 : 1, pose, cat, id]
+      );
+      res.status(200).json({ id, name, detail, freq: freq === 2 ? 2 : 1, pose, cat });
+      return;
+    }
+
     if (req.method === 'DELETE') {
       const { id } = req.body || {};
       if (!id) {
