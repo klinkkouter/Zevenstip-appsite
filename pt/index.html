@@ -95,7 +95,7 @@
   <div class="stat-card"><p class="stat-label">Streak</p><p class="stat-value" id="stat-streak">0 days</p></div>
 </div>
 
-<p class="hint">Tap a day to view it &middot; tap the small button in the corner to mark it a run day</p>
+<p class="hint">Tap a day to view it &middot; tap the small button in the corner to mark it a sports day</p>
 <div class="day-grid" id="day-grid"></div>
 
 <div class="card pt">
@@ -277,7 +277,7 @@ function groupByCat(list){
 function computeSchedule(){
   let trainIdx = 0;
   return state.runDays.map(isRun=>{
-    if(isRun) return { type:'run', label:'Run day', icon:'🏃', exercises:[] };
+    if(isRun) return { type:'run', label:'Sports day', icon:'🏃', exercises:[] };
     const t = TRAIN_TYPES[trainIdx % TRAIN_TYPES.length];
     trainIdx++;
     return Object.assign({type:'train'}, t);
@@ -401,7 +401,7 @@ function render(){
   if(today.type === 'run'){
     const note = document.createElement('p');
     note.className = 'run-note';
-    note.textContent = 'No structured cross-training today — just your run, plus the PT exercises above.';
+    note.textContent = 'No structured cross-training today — just your sport, plus the PT exercises above.';
     todayCard.appendChild(note);
   } else {
     groupByCat(today.exercises).forEach(group=>{
