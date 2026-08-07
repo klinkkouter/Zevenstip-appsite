@@ -19,7 +19,18 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const userId = req.query.userId;
       if (!userId) {
-        res.status(400).json({ error: 'Missing userId' });
+        // No userId: a PT asking for their own client list, folded into
+        // this endpoint rather than a separate file to stay under
+        // Vercel's per-deployment serverless function limit.
+        if (caller.role !== 'pt') {
+          res.status(400).json({ error: 'Missing userId' });
+          return;
+        }
+        const clients = await client.query(
+          "SELECT id, name, email FROM users WHERE pt_id = $1 AND role = 'user' ORDER BY name",
+          [caller.id]
+        );
+        res.status(200).json({ clients: clients.rows });
         return;
       }
       if (!(await canManageClient(client, caller, userId))) {

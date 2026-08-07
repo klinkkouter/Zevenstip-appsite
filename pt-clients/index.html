@@ -53,7 +53,7 @@ async function requirePt(){
 }
 
 async function loadClients(){
-  const res = await fetch('/api/pt-clients');
+  const res = await fetch('/api/manage-pt-program');
   if (!res.ok) return;
   const { clients } = await res.json();
   const list = document.getElementById('clients-list');
