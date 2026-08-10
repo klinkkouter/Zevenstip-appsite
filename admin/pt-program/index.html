@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
-<title>PT program — Zevenstip</title>
+<title>PT program, Zevenstip</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -101,7 +101,7 @@ async function loadPerson(){
   const { users } = await res.json();
   const person = users.find(u => u.id === userId);
   if (person) {
-    document.getElementById('page-title').textContent = "PT program — " + person.name;
+    document.getElementById('page-title').textContent = "PT program, " + person.name;
     document.getElementById('page-subtitle').textContent = person.email;
   } else {
     document.getElementById('page-subtitle').textContent = 'Person not found.';

@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
       try {
         await sendEmail({
           to: adminEmails,
-          subject: 'New access request — PT routine app',
+          subject: 'New access request, PT routine app',
           text:
             `${name} (${email}) requested access to the PT routine app.\n\n` +
             (message ? `Message: ${message}\n\n` : '') +
