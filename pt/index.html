@@ -444,7 +444,9 @@ async function checkAuth(){
   try {
     const res = await fetch('/api/auth/me');
     if(!res.ok){ window.location.href = '/login/?next=/pt/'; return null; }
-    return await res.json();
+    const user = await res.json();
+    if(user.role === 'pt'){ window.location.href = '/pt-clients/'; return null; }
+    return user;
   } catch(e) {
     window.location.href = '/login/?next=/pt/';
     return null;
@@ -462,12 +464,6 @@ function renderUserBar(user){
     adminLink.href = '/admin/';
     adminLink.textContent = 'Admin';
     bar.appendChild(adminLink);
-  }
-  if(user.role === 'pt'){
-    const clientsLink = document.createElement('a');
-    clientsLink.href = '/pt-clients/';
-    clientsLink.textContent = 'My clients';
-    bar.appendChild(clientsLink);
   }
   const logoutBtn = document.createElement('button');
   logoutBtn.textContent = 'Log out';

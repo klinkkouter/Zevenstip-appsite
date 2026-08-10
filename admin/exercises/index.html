@@ -53,7 +53,7 @@
     <h1>Exercise library</h1>
     <p class="subtitle">The catalog PTs pick from to build a customer's PT program</p>
   </div>
-  <a href="/admin/">&larr; Back to admin</a>
+  <a href="/admin/" id="back-link">&larr; Back to admin</a>
 </div>
 
 <div class="card">
@@ -91,12 +91,13 @@
 <script>
 const CAT_LABELS = { standing:'Standing', floor:'On the floor', seated:'Seated / feet', head:'Head & neck' };
 const CAT_ORDER = ['standing', 'floor', 'seated', 'head'];
+let caller = null;
 
-async function requireAdmin(){
+async function requireAdminOrPt(){
   const res = await fetch('/api/auth/me');
   if (!res.ok) { window.location.href = '/login/?next=/admin/exercises/'; return null; }
   const user = await res.json();
-  if (user.role !== 'admin') { window.location.href = '/pt/'; return null; }
+  if (user.role !== 'admin' && user.role !== 'pt') { window.location.href = '/pt/'; return null; }
   return user;
 }
 
@@ -127,29 +128,31 @@ async function loadExercises(){
       left.innerHTML = '<div class="ex-name">'+ex.name+'</div><div class="ex-detail">'+ex.detail+(ex.freq===2 ? ' · 2×/day' : '')+'</div><div class="ex-explanation">'+ex.explanation+'</div>';
       row.appendChild(left);
 
-      const actions = document.createElement('div');
+      if (caller.role === 'admin') {
+        const actions = document.createElement('div');
 
-      const modifyBtn = document.createElement('button');
-      modifyBtn.className = 'delete-btn';
-      modifyBtn.textContent = 'Modify';
-      modifyBtn.onclick = ()=> startEdit(ex);
-      actions.appendChild(modifyBtn);
+        const modifyBtn = document.createElement('button');
+        modifyBtn.className = 'delete-btn';
+        modifyBtn.textContent = 'Modify';
+        modifyBtn.onclick = ()=> startEdit(ex);
+        actions.appendChild(modifyBtn);
 
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'delete-btn';
-      deleteBtn.textContent = 'Delete';
-      deleteBtn.onclick = async ()=>{
-        if (!confirm('Remove "'+ex.name+'" from the library?')) return;
-        await fetch('/api/exercise-library', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: ex.id })
-        });
-        loadExercises();
-      };
-      actions.appendChild(deleteBtn);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = async ()=>{
+          if (!confirm('Remove "'+ex.name+'" from the library?')) return;
+          await fetch('/api/exercise-library', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: ex.id })
+          });
+          loadExercises();
+        };
+        actions.appendChild(deleteBtn);
 
-      row.appendChild(actions);
+        row.appendChild(actions);
+      }
       group.appendChild(row);
     });
 
@@ -213,8 +216,13 @@ document.getElementById('create-form').addEventListener('submit', async (e)=>{
 });
 
 (async function init(){
-  const user = await requireAdmin();
-  if (!user) return;
+  caller = await requireAdminOrPt();
+  if (!caller) return;
+  if (caller.role === 'pt') {
+    const backLink = document.getElementById('back-link');
+    backLink.href = '/pt-clients/';
+    backLink.textContent = '← Back to my clients';
+  }
   loadExercises();
 })();
 </script>
