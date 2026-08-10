@@ -21,6 +21,8 @@
   .stat-card { flex: 1; background: #fff; border: 1px solid #e4e2da; border-radius: 10px; padding: 12px; }
   .stat-label { font-size: 12px; color: #6b6a63; margin: 0 0 4px; }
   .stat-value { font-size: 22px; font-weight: 600; margin: 0; }
+  .stat-value.pt-name { font-size: 15px; overflow-wrap: anywhere; }
+  .stat-value.pt-name a { color: inherit; text-decoration: underline; }
   .hint { font-size: 12px; color: #8a8880; margin: 0 0 8px; }
   .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px; }
   .day-tile { position: relative; text-align: center; padding: 8px 2px 6px; border-radius: 8px; border: 1px solid #e4e2da; background: #fff; cursor: pointer; }
@@ -89,7 +91,7 @@
 <p class="subtitle">Progress saves to your account &middot; tap any exercise for a quick visual</p>
 <p class="sync-note" id="sync-note"></p>
 
-<div class="stats">
+<div class="stats" id="stats-row">
   <div class="stat-card"><p class="stat-label">Week</p><p class="stat-value" id="stat-week">1</p></div>
   <div class="stat-card"><p class="stat-label">Streak</p><p class="stat-value" id="stat-streak">0 days</p></div>
 </div>
@@ -440,7 +442,9 @@ async function checkAuth(){
   try {
     const res = await fetch('/api/auth/me');
     if(!res.ok){ window.location.href = '/login/?next=/pt/'; return null; }
-    return await res.json();
+    const user = await res.json();
+    if(user.role === 'pt'){ window.location.href = '/pt-clients/'; return null; }
+    return user;
   } catch(e) {
     window.location.href = '/login/?next=/pt/';
     return null;
@@ -468,10 +472,29 @@ function renderUserBar(user){
   bar.appendChild(logoutBtn);
 }
 
+function renderPtStat(user){
+  if(!user.pt) return;
+  const card = document.createElement('div');
+  card.className = 'stat-card';
+  const label = document.createElement('p');
+  label.className = 'stat-label';
+  label.textContent = 'Your PT';
+  const value = document.createElement('p');
+  value.className = 'stat-value pt-name';
+  const link = document.createElement('a');
+  link.href = 'mailto:' + user.pt.email;
+  link.textContent = user.pt.name;
+  value.appendChild(link);
+  card.appendChild(label);
+  card.appendChild(value);
+  document.getElementById('stats-row').appendChild(card);
+}
+
 (async function init(){
   const user = await checkAuth();
   if(!user) return;
   renderUserBar(user);
+  renderPtStat(user);
   render();
   await Promise.all([loadState(), loadPtProgram()]);
   render();

@@ -1,8 +1,8 @@
 const crypto = require('crypto');
-const { getPool } = require('../_lib/db');
-const { ensureAuthTables, getSessionUser } = require('../_lib/auth');
-const { ensureExerciseLibraryTable } = require('../_lib/exercise-library');
-const { ensurePtAssignmentsTable } = require('../_lib/pt-assignments');
+const { getPool } = require('./_lib/db');
+const { ensureAuthTables, getSessionUser } = require('./_lib/auth');
+const { ensureExerciseLibraryTable } = require('./_lib/exercise-library');
+const { ensurePtAssignmentsTable, canManageClient } = require('./_lib/pt-assignments');
 
 module.exports = async (req, res) => {
   const client = await getPool().connect();
@@ -11,18 +11,38 @@ module.exports = async (req, res) => {
     await ensureExerciseLibraryTable(client);
     await ensurePtAssignmentsTable(client);
     const caller = await getSessionUser(client, req);
-    if (!caller || caller.role !== 'admin') {
-      res.status(403).json({ error: 'Admin only' });
+    if (!caller || (caller.role !== 'admin' && caller.role !== 'pt')) {
+      res.status(403).json({ error: 'Admin or PT only' });
       return;
     }
 
     if (req.method === 'GET') {
       const userId = req.query.userId;
       if (!userId) {
-        res.status(400).json({ error: 'Missing userId' });
+        // No userId: a PT asking for their own client list, folded into
+        // this endpoint rather than a separate file to stay under
+        // Vercel's per-deployment serverless function limit.
+        if (caller.role !== 'pt') {
+          res.status(400).json({ error: 'Missing userId' });
+          return;
+        }
+        const clients = await client.query(
+          "SELECT id, name, email FROM users WHERE pt_id = $1 AND role = 'user' ORDER BY name",
+          [caller.id]
+        );
+        res.status(200).json({ clients: clients.rows });
         return;
       }
-      const result = await client.query(
+      if (!(await canManageClient(client, caller, userId))) {
+        res.status(403).json({ error: "You don't have access to this person's program" });
+        return;
+      }
+      const person = await client.query('SELECT id, name, email FROM users WHERE id = $1', [userId]);
+      if (!person.rows.length) {
+        res.status(404).json({ error: 'Person not found' });
+        return;
+      }
+      const assignments = await client.query(
         `SELECT a.id, a.detail, a.freq, a.library_id, l.name, l.explanation, l.cat
          FROM pt_assignments a
          JOIN pt_exercise_library l ON l.id = a.library_id
@@ -30,7 +50,7 @@ module.exports = async (req, res) => {
          ORDER BY a.created_at`,
         [userId]
       );
-      res.status(200).json({ assignments: result.rows });
+      res.status(200).json({ person: person.rows[0], assignments: assignments.rows });
       return;
     }
 
@@ -38,6 +58,10 @@ module.exports = async (req, res) => {
       const { userId, libraryId } = req.body || {};
       if (!userId || !libraryId) {
         res.status(400).json({ error: 'Missing userId or libraryId' });
+        return;
+      }
+      if (!(await canManageClient(client, caller, userId))) {
+        res.status(403).json({ error: "You don't have access to this person's program" });
         return;
       }
       const lib = await client.query('SELECT detail, freq FROM pt_exercise_library WHERE id = $1', [libraryId]);
@@ -68,6 +92,15 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'Missing fields' });
         return;
       }
+      const assignment = await client.query('SELECT user_id FROM pt_assignments WHERE id = $1', [id]);
+      if (!assignment.rows.length) {
+        res.status(404).json({ error: 'Assignment not found' });
+        return;
+      }
+      if (!(await canManageClient(client, caller, assignment.rows[0].user_id))) {
+        res.status(403).json({ error: "You don't have access to this person's program" });
+        return;
+      }
       await client.query('UPDATE pt_assignments SET detail = $1, freq = $2 WHERE id = $3', [
         detail,
         freq === 2 ? 2 : 1,
@@ -81,6 +114,15 @@ module.exports = async (req, res) => {
       const { id } = req.body || {};
       if (!id) {
         res.status(400).json({ error: 'Missing id' });
+        return;
+      }
+      const assignment = await client.query('SELECT user_id FROM pt_assignments WHERE id = $1', [id]);
+      if (!assignment.rows.length) {
+        res.status(404).json({ error: 'Assignment not found' });
+        return;
+      }
+      if (!(await canManageClient(client, caller, assignment.rows[0].user_id))) {
+        res.status(403).json({ error: "You don't have access to this person's program" });
         return;
       }
       await client.query('DELETE FROM pt_assignments WHERE id = $1', [id]);
