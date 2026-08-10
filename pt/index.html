@@ -91,7 +91,6 @@
 
 <div class="stats">
   <div class="stat-card"><p class="stat-label">Week</p><p class="stat-value" id="stat-week">1</p></div>
-  <div class="stat-card"><p class="stat-label">Training days</p><p class="stat-value" id="stat-train">0 / 5</p></div>
   <div class="stat-card"><p class="stat-label">Streak</p><p class="stat-value" id="stat-streak">0 days</p></div>
 </div>
 
@@ -307,13 +306,10 @@ document.getElementById('modal-overlay').addEventListener('click', (e)=>{
 
 function render(){
   const schedule = computeSchedule();
-  const weekTrainDone = schedule.filter((d,i)=>d.type==='train' && state.completed['w'+state.week+'_d'+i]).length;
-  const trainTotal = schedule.filter(d=>d.type==='train').length;
   const today = schedule[state.day];
 
   document.getElementById('stat-week').textContent = state.week;
   document.getElementById('prev-week').disabled = state.week <= 1;
-  document.getElementById('stat-train').textContent = weekTrainDone + ' / ' + trainTotal;
   document.getElementById('stat-streak').textContent = state.streak + ' days';
 
   const grid = document.getElementById('day-grid');
