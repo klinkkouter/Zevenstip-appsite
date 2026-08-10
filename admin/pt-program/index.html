@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
-<title>PT program — Zevenstip</title>
+<title>PT program, Zevenstip</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -143,7 +143,7 @@ async function loadPersonAndAssigned(){
     return null;
   }
   const { person, assignments } = await res.json();
-  document.getElementById('page-title').textContent = 'PT program — ' + person.name;
+  document.getElementById('page-title').textContent = 'PT program, ' + person.name;
   document.getElementById('page-subtitle').textContent = person.email;
   document.getElementById('available-card').style.display = 'block';
 
@@ -253,7 +253,7 @@ document.getElementById('new-exercise-form').addEventListener('submit', async (e
     return;
   }
   msg.className = 'msg ok';
-  msg.textContent = 'Added — you can assign it below.';
+  msg.textContent = 'Added, you can assign it below.';
   document.getElementById('new-exercise-form').reset();
   refresh();
 });

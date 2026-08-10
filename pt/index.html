@@ -100,7 +100,7 @@
 
 <div class="card pt">
   <div class="card-header">
-    <span class="card-title">Daily PT — every day</span>
+    <span class="card-title">Daily PT every day</span>
     <span class="card-sub" id="pt-progress">0 / 12</span>
   </div>
   <div id="pt-list"></div>
@@ -257,7 +257,7 @@ function saveState(){
       if(!res.ok) throw new Error('save failed');
       syncNote.textContent = '';
     })
-    .catch(()=>{ syncNote.textContent = "Couldn't save — check your connection."; });
+    .catch(()=>{ syncNote.textContent = "Couldn't save, check your connection."; });
   }, 400);
 }
 
@@ -398,7 +398,7 @@ function render(){
   if(today.type === 'run'){
     const note = document.createElement('p');
     note.className = 'run-note';
-    note.textContent = 'No structured cross-training today — just your sport, plus the PT exercises above.';
+    note.textContent = 'No structured cross-training today, just your sport, plus the PT exercises above.';
     todayCard.appendChild(note);
   } else {
     groupByCat(today.exercises).forEach(group=>{

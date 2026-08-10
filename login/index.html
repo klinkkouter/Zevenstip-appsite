@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
-<title>Log in — Zevenstip</title>
+<title>Log in, Zevenstip</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -70,7 +70,7 @@
 </div>
 
 <div class="card hidden" id="request-success">
-  <p class="success">Thanks — your request has been sent. You'll hear back once your account is set up.</p>
+  <p class="success">Thanks, your request has been sent. You'll hear back once your account is set up.</p>
 </div>
 
 <script>
@@ -94,7 +94,7 @@ document.getElementById('login-form').addEventListener('submit', async (e)=>{
     const params = new URLSearchParams(window.location.search);
     window.location.href = params.get('next') || '/pt/';
   } catch (err) {
-    errorEl.textContent = "Couldn't reach the server — check your connection.";
+    errorEl.textContent = "Couldn't reach the server, check your connection.";
   }
 });
 
@@ -130,7 +130,7 @@ document.getElementById('request-form').addEventListener('submit', async (e)=>{
     document.getElementById('request-card').classList.add('hidden');
     document.getElementById('request-success').classList.remove('hidden');
   } catch (err) {
-    errorEl.textContent = "Couldn't reach the server — check your connection.";
+    errorEl.textContent = "Couldn't reach the server, check your connection.";
   }
 });
 </script>

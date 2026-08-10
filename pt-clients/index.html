@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
-<title>PT dashboard — Zevenstip</title>
+<title>PT dashboard, Zevenstip</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -32,7 +32,7 @@
     display: inline-block; font-size: 13px; color: #b3562e; text-decoration: none; font-weight: 600;
   }
 
-  /* Static preview of the participant-facing app — not live, decorative only */
+  /* Static preview of the participant-facing app, not live, decorative only */
   .preview-frame {
     position: relative;
     border: 1px dashed #cfcdc4;
@@ -90,7 +90,7 @@
 
 <div class="card">
   <h2>What your clients see</h2>
-  <p class="card-note">A preview of the app layout — not live data.</p>
+  <p class="card-note">A preview of the app layout, not live data.</p>
   <div class="preview-frame">
     <span class="preview-tag">Preview</span>
     <div class="p-stats">
@@ -108,12 +108,12 @@
       <div class="p-day">Sun</div>
     </div>
     <div class="p-card pt">
-      <div class="p-card-title">Daily PT — every day</div>
+      <div class="p-card-title">Daily PT every day</div>
       <div class="p-row"><span class="p-name">Clamshells</span><span class="p-check done">&check;</span></div>
       <div class="p-row"><span class="p-name">Chin tuck</span><span class="p-check">&check;</span></div>
     </div>
     <div class="p-card today">
-      <div class="p-card-title">Today — Strength</div>
+      <div class="p-card-title">Today, Strength</div>
       <div class="p-row"><span class="p-name">Squats</span><span class="p-detail">3 &times; 10</span></div>
       <div class="p-row"><span class="p-name">Plank hold</span><span class="p-detail">1 &times; 45s</span></div>
     </div>
@@ -144,7 +144,7 @@ async function loadClients(){
   if (!clients.length) {
     const empty = document.createElement('p');
     empty.className = 'empty-note';
-    empty.textContent = 'No clients assigned to you yet — ask an admin to assign one.';
+    empty.textContent = 'No clients assigned to you yet, ask an admin to assign one.';
     list.appendChild(empty);
     return;
   }
