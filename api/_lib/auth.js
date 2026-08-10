@@ -85,7 +85,7 @@ async function getSessionUser(client, req) {
   const token = parseCookies(req)[SESSION_COOKIE];
   if (!token) return null;
   const result = await client.query(
-    `SELECT u.id, u.email, u.name, u.role
+    `SELECT u.id, u.email, u.name, u.role, u.pt_id
      FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.token = $1 AND s.expires_at > now()`,
     [token]
